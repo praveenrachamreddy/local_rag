@@ -1,0 +1,149 @@
+# PersistentVolumeClaim for embedding models
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: embedding-models-pvc
+  labels:
+    app: my-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  #storageClassName: gp2  # Change this based on your OpenShift storage class
+
+---
+# PersistentVolumeClaim for Milvus data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: milvus-data-pvc
+  labels:
+    app: my-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  #storageClassName: gp2  # Change this based on your OpenShift storage class
+
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-deployment
+  labels:
+    app: my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app
+        image: image-registry.openshift-image-registry.svc:5000/vllm/local-rag-app:latest
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        env:
+        - name: EMBEDDING_MODEL_PATH
+          value: "/mnt/embeddings"
+        - name: MILVUS_DATA_PATH
+          value: "/mnt/milvus"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        volumeMounts:
+        - name: embedding-models-storage
+          mountPath: /mnt/embeddings
+        - name: milvus-data-storage
+          mountPath: /mnt/milvus
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 15
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 90
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: embedding-models-storage
+        persistentVolumeClaim:
+          claimName: embedding-models-pvc
+      - name: milvus-data-storage
+        persistentVolumeClaim:
+          claimName: milvus-data-pvc
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+  labels:
+    app: my-app
+spec:
+  selector:
+    app: my-app
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Route (OpenShift specific)
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: my-app-route
+  labels:
+    app: my-app
+  annotations:
+    haproxy.router.openshift.io/timeout: 600s
+spec:
+  to:
+    kind: Service
+    name: my-app-service
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
