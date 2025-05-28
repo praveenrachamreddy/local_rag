@@ -4,13 +4,13 @@ FROM registry.access.redhat.com/ubi8/python-39:latest
 # Set working directory
 WORKDIR /app
 
-# Create a non-root user and group
-RUN groupadd -g 1001 appuser && \
-    useradd -u 1001 -g appuser -m -d /home/appuser appuser
-
-# Install system dependencies
+# Install system dependencies as root
 RUN dnf install -y gcc python3-devel && \
     dnf clean all
+
+# Create a non-root user and group with explicit permissions
+RUN groupadd -r -g 1001 appuser && \
+    useradd -r -u 1001 -g appuser -m -d /home/appuser -s /sbin/nologin appuser
 
 # Copy requirements.txt and install dependencies
 COPY requirements.txt .
