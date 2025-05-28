@@ -15,8 +15,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY app.py ./
 
 # Create directories for mounted volumes and ensure proper permissions
-RUN mkdir -p /mnt/embeddings /mnt/milvus /opt/app-root/data && \
-    chmod -R g+rwX /mnt/embeddings /mnt/milvus /opt/app-root/data
+RUN mkdir -p /tmp/embeddings /tmp/milvus /opt/app-root/data && \
+    chmod -R g+rwX /tmp/embeddings /tmp/milvus /opt/app-root/data
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
