@@ -1,42 +1,45 @@
-# Use Red Hat UBI 8 with Python 3.9
+# Use Red Hat UBI 8 Python 3.9 image
 FROM registry.access.redhat.com/ubi8/python-39:latest
 
 # Set working directory
-WORKDIR /app
+WORKDIR /opt/app-root/src
 
-# Install system dependencies as root
-RUN dnf install -y gcc python3-devel && \
-    dnf clean all
+# Copy requirements.txt first for better caching
+COPY requirements.txt ./
 
-# Create a non-root user and group with explicit permissions
-RUN groupadd -r -g 1001 appuser && \
-    useradd -r -u 1001 -g appuser -m -d /home/appuser -s /sbin/nologin appuser
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy requirements.txt and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Create embeddings directory in user's home
+RUN mkdir -p /opt/app-root/embeddings
 
-# Download the embedding model and store it in /embeddings
-RUN python -c "from transformers import AutoTokenizer; from langchain_huggingface import HuggingFaceEmbeddings; \
-    embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2', cache_folder='/embeddings')"
+# Download and cache the embedding model
+RUN python -c "from transformers import AutoTokenizer, AutoModel; \
+    from sentence_transformers import SentenceTransformer; \
+    model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', cache_folder='/opt/app-root/embeddings'); \
+    print('Model downloaded successfully')"
 
-# Copy the application code
-COPY app.py .
+# Copy application code
+COPY --chown=1001:0 app.py ./
 
-# Set permissions for /app and /embeddings
-RUN chown -R appuser:appuser /app /embeddings && \
-    chmod -R u+rw /app /embeddings
+# Create directory for application data
+RUN mkdir -p /opt/app-root/data && \
+    chmod -R g+rwX /opt/app-root/src && \
+    chmod -R g+rwX /opt/app-root/embeddings && \
+    chmod -R g+rwX /opt/app-root/data
 
-# Create directory for Milvus data with appropriate permissions
-RUN mkdir -p /mnt/milvus && \
-    chown -R appuser:appuser /mnt/milvus && \
-    chmod -R u+rw /mnt/milvus
-
-# Switch to non-root user
-USER appuser
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/opt/app-root/src
+ENV HOME=/opt/app-root/src
 
 # Expose port
-EXPOSE 5000
+EXPOSE 8080
+
+# Health check (optional)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Run the application
 CMD ["python", "app.py"]
