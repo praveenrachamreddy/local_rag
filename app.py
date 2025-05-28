@@ -6,6 +6,7 @@ from io import BytesIO
 import tempfile
 import os
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from docling.document_converter import DocumentConverter
 from docling_core.transforms.chunker.hybrid_chunker import HybridChunker
 from docling_core.types.doc.labels import DocItemLabel
@@ -159,6 +160,7 @@ def initialize_converter():
 # ---------------------------
 
 app = Flask(__name__)
+CORS(app)  # Allows all origins — tighten this in production!
 
 def process_document(source: str, is_url: bool = True):
     """Process document and return chunks"""
