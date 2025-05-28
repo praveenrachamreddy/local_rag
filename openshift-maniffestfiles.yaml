@@ -55,16 +55,16 @@ spec:
           protocol: TCP
         env:
         - name: EMBEDDING_MODEL_PATH
-          value: "/mnt/embeddings"
+          value: "/tmp/embeddings"
         - name: MILVUS_DATA_PATH
-          value: "/mnt/milvus"
+          value: "/tmp/milvus"
         - name: PYTHONUNBUFFERED
           value: "1"
         volumeMounts:
         - name: embedding-models-storage
-          mountPath: /mnt/embeddings
+          mountPath: /tmp/embeddings
         - name: milvus-data-storage
-          mountPath: /mnt/milvus
+          mountPath: /tmp/milvus
         resources:
           requests:
             memory: "512Mi"
