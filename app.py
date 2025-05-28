@@ -79,7 +79,7 @@ def initialize_embedding_model():
     """Initialize embedding model from persistent storage"""
     global embeddings, tokenizer
     
-    embedding_model_path = os.getenv('EMBEDDING_MODEL_PATH', '/mnt/embeddings')
+    embedding_model_path = os.getenv('EMBEDDING_MODEL_PATH', '/tmp/embeddings')
     model_name = 'sentence-transformers/all-MiniLM-L6-v2'
     
     try:
@@ -121,7 +121,7 @@ def initialize_milvus():
     global vector_db
     
     try:
-        milvus_data_path = os.getenv('MILVUS_DATA_PATH', '/mnt/milvus')
+        milvus_data_path = os.getenv('MILVUS_DATA_PATH', '/tmp/milvus')
         db_file = os.path.join(milvus_data_path, "milvus.db")
         
         # Ensure the directory exists
@@ -198,8 +198,8 @@ def health_check():
         'tokenizer_loaded': tokenizer is not None,
         'vector_db_initialized': vector_db is not None,
         'converter_initialized': converter is not None,
-        'embedding_path': os.getenv('EMBEDDING_MODEL_PATH', '/mnt/embeddings'),
-        'milvus_path': os.getenv('MILVUS_DATA_PATH', '/mnt/milvus')
+        'embedding_path': os.getenv('EMBEDDING_MODEL_PATH', '/tmp/embeddings'),
+        'milvus_path': os.getenv('MILVUS_DATA_PATH', '/tmp/milvus')
     })
 
 @app.route('/')
