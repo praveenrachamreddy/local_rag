@@ -20,14 +20,12 @@ RUN python -c "from transformers import AutoTokenizer, AutoModel; \
     model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', cache_folder='/opt/app-root/embeddings'); \
     print('Model downloaded successfully')"
 
-# Copy application code
-COPY --chown=1001:0 app.py ./
 
-# Create directory for application data
-RUN mkdir -p /opt/app-root/data && \
-    chmod -R g+rwX /opt/app-root/src && \
-    chmod -R g+rwX /opt/app-root/embeddings && \
-    chmod -R g+rwX /opt/app-root/data
+# Copy application code
+COPY app.py ./
+
+# Create directory for application data and set minimal permissions
+RUN mkdir -p /opt/app-root/data
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
