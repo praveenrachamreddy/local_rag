@@ -1,5 +1,6 @@
 # Core Flask application
 Flask
+flask-cors
 Werkzeug
 
 # Document processing
