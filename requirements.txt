@@ -3,8 +3,8 @@ Flask==3.0.0
 Werkzeug==3.0.1
 
 # Document processing
-docling==1.19.0
-docling-core==1.21.0
+docling
+docling-core
 
 # Language model and embeddings
 langchain==0.3.7
