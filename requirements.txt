@@ -1,46 +1,46 @@
 # Core Flask application
-Flask==3.0.0
-Werkzeug==3.0.1
+Flask
+Werkzeug
 
 # Document processing
 docling
 docling-core
 
 # Language model and embeddings
-langchain==0.3.7
-langchain-core==0.3.15
-langchain-huggingface==0.1.2
-langchain-milvus==0.1.6
-transformers==4.46.2
-sentence-transformers==3.3.1
-torch==2.5.1
-torchvision==0.20.1
-torchaudio==0.20.1
+langchain
+langchain-core
+langchain-huggingface
+langchain-milvus
+transformers
+sentence-transformers
+torch
+torchvision
+torchaudio
 
 # Vector database
-pymilvus==2.4.8
+pymilvus
 
 # HTTP requests
-requests==2.32.3
-urllib3==2.2.3
+requests
+urllib3
 
 # Additional utilities
-numpy==1.26.4
-pandas==2.2.3
-Pillow==10.4.0
-python-multipart==0.0.12
+numpy
+pandas
+Pillow
+python-multipart
 
 # Tokenizers and model utilities
-tokenizers==0.20.3
-huggingface-hub==0.26.2
-safetensors==0.4.5
+tokenizers
+huggingface-hub
+safetensors
 
 # Additional dependencies for document processing
-pypdf==4.3.1
-python-docx==1.1.2
-openpyxl==3.1.5
-xlrd==2.0.1
+pypdf
+python-docx
+openpyxl
+xlrd
 
 # Logging and utilities
-colorama==0.4.6
-tqdm==4.66.6
+colorama
+tqdm
