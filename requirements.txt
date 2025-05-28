@@ -1,11 +1,46 @@
-Flask
-requests
-langchain
-langchain-core
-langchain-huggingface
-langchain-milvus
-docling
-docling-core
-transformers
-sentence-transformers
-urllib3
+# Core Flask application
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Document processing
+docling==1.19.0
+docling-core==1.21.0
+
+# Language model and embeddings
+langchain==0.3.7
+langchain-core==0.3.15
+langchain-huggingface==0.1.2
+langchain-milvus==0.1.6
+transformers==4.46.2
+sentence-transformers==3.3.1
+torch==2.5.1
+torchvision==0.20.1
+torchaudio==0.20.1
+
+# Vector database
+pymilvus==2.4.8
+
+# HTTP requests
+requests==2.32.3
+urllib3==2.2.3
+
+# Additional utilities
+numpy==1.26.4
+pandas==2.2.3
+Pillow==10.4.0
+python-multipart==0.0.12
+
+# Tokenizers and model utilities
+tokenizers==0.20.3
+huggingface-hub==0.26.2
+safetensors==0.4.5
+
+# Additional dependencies for document processing
+pypdf==4.3.1
+python-docx==1.1.2
+openpyxl==3.1.5
+xlrd==2.0.1
+
+# Logging and utilities
+colorama==0.4.6
+tqdm==4.66.6
