@@ -11,32 +11,25 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Create embeddings directory in user's home
-RUN mkdir -p /opt/app-root/embeddings
-
-# Download and cache the embedding model
-RUN python -c "from transformers import AutoTokenizer, AutoModel; \
-    from sentence_transformers import SentenceTransformer; \
-    model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', cache_folder='/opt/app-root/embeddings'); \
-    print('Model downloaded successfully')"
-
-
 # Copy application code
 COPY app.py ./
 
-# Create directory for application data and set minimal permissions
-RUN mkdir -p /opt/app-root/data
+# Create directories for mounted volumes and ensure proper permissions
+RUN mkdir -p /mnt/embeddings /mnt/milvus /opt/app-root/data && \
+    chmod -R g+rwX /mnt/embeddings /mnt/milvus /opt/app-root/data
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/opt/app-root/src
 ENV HOME=/opt/app-root/src
+ENV EMBEDDING_MODEL_PATH=/mnt/embeddings
+ENV MILVUS_DATA_PATH=/mnt/milvus
 
 # Expose port
 EXPOSE 8080
 
-# Health check (optional)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
 # Run the application
