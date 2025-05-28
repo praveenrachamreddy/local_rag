@@ -25,6 +25,10 @@ from pathlib import Path
 # Disable warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # ---------------------------
 # TinyLLM Wrapper
 # ---------------------------
@@ -91,7 +95,7 @@ def initialize_embedding_model():
         model_cache_path = Path(embedding_model_path) / "models--sentence-transformers--all-MiniLM-L6-v2"
         
         if model_cache_path.exists():
-            print(f"Loading embedding model from cache: {embedding_model_path}")
+            logger.info(f"Loading embedding model from cache: {embedding_model_path}")
             embeddings = HuggingFaceEmbeddings(
                 model_name=model_name,
                 cache_folder=embedding_model_path
@@ -101,7 +105,7 @@ def initialize_embedding_model():
                 cache_dir=embedding_model_path
             )
         else:
-            print(f"Downloading embedding model to: {embedding_model_path}")
+            logger.info(f"Downloading embedding model to: {embedding_model_path}")
             embeddings = HuggingFaceEmbeddings(
                 model_name=model_name,
                 cache_folder=embedding_model_path
@@ -110,11 +114,11 @@ def initialize_embedding_model():
                 model_name,
                 cache_dir=embedding_model_path
             )
-            print("Embedding model downloaded and cached successfully")
+            logger.info("Embedding model downloaded and cached successfully")
         
         return True
     except Exception as e:
-        print(f"Error initializing embedding model: {e}")
+        logger.error(f"Error initializing embedding model: {e}")
         return False
 
 def initialize_milvus():
@@ -128,20 +132,22 @@ def initialize_milvus():
         # Ensure the directory exists
         os.makedirs(os.path.dirname(db_file), exist_ok=True)
         
-        print(f"Initializing Milvus database at: {db_file}")
+        logger.info(f"Initializing Milvus database at: {db_file}")
         
         vector_db = Milvus(
             embedding_function=embeddings,
             connection_args={"uri": db_file},
+            collection_name="rag_collection",  # Explicit collection name
             auto_id=True,
             enable_dynamic_field=True,
-            index_params={"index_type": "AUTOINDEX"},
+            index_params={"index_type": "AUTOINDEX", "metric_type": "L2", "params": {}},
+            drop_old=False  # Set to True temporarily if schema mismatch persists
         )
         
-        print("Milvus vector database initialized successfully")
+        logger.info("Milvus vector database initialized successfully")
         return True
     except Exception as e:
-        print(f"Error initializing Milvus: {e}")
+        logger.error(f"Error initializing Milvus: {e}")
         return False
 
 def initialize_converter():
@@ -149,10 +155,10 @@ def initialize_converter():
     global converter
     try:
         converter = DocumentConverter()
-        print("Document converter initialized successfully")
+        logger.info("Document converter initialized successfully")
         return True
     except Exception as e:
-        print(f"Error initializing document converter: {e}")
+        logger.error(f"Error initializing document converter: {e}")
         return False
 
 # ---------------------------
@@ -169,10 +175,10 @@ def process_document(source: str, is_url: bool = True):
 
     try:
         if is_url:
-            print(f"Processing URL: {source}")
+            logger.info(f"Processing URL: {source}")
             doc_result = converter.convert(source=source).document
         else:
-            print(f"Processing uploaded file")
+            logger.info(f"Processing uploaded file: {source.filename}")
             with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
                 source.save(tmpfile.name)
                 doc_result = converter.convert(source=tmpfile.name).document
@@ -181,14 +187,25 @@ def process_document(source: str, is_url: bool = True):
 
         for chunk in chunks:
             if any(item.label in [DocItemLabel.TEXT, DocItemLabel.PARAGRAPH] for item in chunk.meta.doc_items):
+                # Convert source to string to avoid FileStorage serialization issues
+                source_str = source if is_url else source.filename
                 texts.append(
-                    Document(page_content=chunk.text, metadata={"doc_id": (doc_id + 1), "source": source})
+                    Document(
+                        page_content=chunk.text,
+                        metadata={"doc_id": doc_id + 1, "source": source_str}
+                    )
                 )
         doc_id += 1
+
+        # Log chunks for debugging
+        logger.info(f"Generated {len(texts)} chunks for insertion")
+        for i, chunk in enumerate(texts):
+            logger.info(f"Chunk {i+1}: {chunk.page_content[:50]}... | Metadata: {chunk.metadata}")
 
         return texts
 
     except Exception as e:
+        logger.error(f"Error processing document: {str(e)}")
         raise RuntimeError(f"Error processing document: {str(e)}")
 
 @app.route('/health')
@@ -242,7 +259,7 @@ def process():
 
         # Add documents to vector database
         ids = vector_db.add_documents(chunks)
-        print(f"{len(ids)} documents added to the vector database")
+        logger.info(f"{len(ids)} documents added to the vector database")
 
         # Create retriever
         retriever = vector_db.as_retriever()
@@ -280,33 +297,30 @@ Answer the question based only on the following context:
         return jsonify({"answer": output["answer"]})
 
     except Exception as e:
-        app.logger.error(f"Error processing request: {str(e)}")
+        logger.error(f"Error processing request: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    print("Starting RAG application...")
-    
-    # Configure logging
-    logging.basicConfig(level=logging.INFO)
+    logger.info("Starting RAG application...")
     
     # Initialize all components
-    print("Initializing embedding model...")
+    logger.info("Initializing embedding model...")
     if not initialize_embedding_model():
-        print("Failed to initialize embedding model. Exiting...")
+        logger.error("Failed to initialize embedding model. Exiting...")
         sys.exit(1)
     
-    print("Initializing Milvus database...")
+    logger.info("Initializing Milvus database...")
     if not initialize_milvus():
-        print("Failed to initialize Milvus. Exiting...")
+        logger.error("Failed to initialize Milvus. Exiting...")
         sys.exit(1)
     
-    print("Initializing document converter...")
+    logger.info("Initializing document converter...")
     if not initialize_converter():
-        print("Failed to initialize document converter. Exiting...")
+        logger.error("Failed to initialize document converter. Exiting...")
         sys.exit(1)
     
-    print("All components initialized successfully!")
-    print("Starting Flask application...")
+    logger.info("All components initialized successfully!")
+    logger.info("Starting Flask application...")
     
     # Start the Flask app
     app.run(host='0.0.0.0', port=8080, debug=False)
