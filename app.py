@@ -4,7 +4,7 @@ import requests
 from typing import Any, List, Optional, Dict
 from io import BytesIO
 import tempfile
-
+import os
 from flask import Flask, request, jsonify
 from docling.document_converter import DocumentConverter
 from docling_core.transforms.chunker.hybrid_chunker import HybridChunker
@@ -69,7 +69,7 @@ class TinyLLM(LLM):
 # Initialize Embedding Model
 # ---------------------------
 
-embeddings_model_path = "sentence-transformers/all-MiniLM-L6-v2"
+embeddings_model_path = "/mnt/embeddings/sentence-transformers/all-MiniLM-L6-v2"
 embeddings = HuggingFaceEmbeddings(model_name=embeddings_model_path)
 tokenizer = AutoTokenizer.from_pretrained(embeddings_model_path)
 
@@ -77,11 +77,11 @@ tokenizer = AutoTokenizer.from_pretrained(embeddings_model_path)
 # Initialize Vector DB
 # ---------------------------
 
-# Instead of using tempfile...
-# db_file = tempfile.NamedTemporaryFile(prefix="milvus_", suffix=".db", delete=False).name
-# Use a fixed path inside container
-db_file = "/app/milvusdb/milvus.db"
+db_file = "/mnt/milvus/milvus.db"
 print(f"The vector database will be saved to {db_file}")
+
+# Ensure the directory exists
+os.makedirs(os.path.dirname(db_file), exist_ok=True)
 
 vector_db = Milvus(
     embedding_function=embeddings,
@@ -126,7 +126,6 @@ def process_document(source: str, is_url: bool = True):
     except Exception as e:
         raise RuntimeError(f"Error processing document: {str(e)}")
 
-
 @app.route('/process', methods=['POST'])
 def process():
     try:
@@ -135,24 +134,20 @@ def process():
         if not question:
             return jsonify({"error": "Question is required"}), 400
 
-        # Check for document URL or file upload
         document_url = data.get('document_url')
         file = request.files.get('file')
 
         if not document_url and not file:
             return jsonify({"error": "Either document_url or file is required"}), 400
 
-        # Process document
         if file:
             chunks = process_document(file, is_url=False)
         else:
             chunks = process_document(document_url, is_url=True)
 
-        # Add to vector DB
         ids = vector_db.add_documents(chunks)
         print(f"{len(ids)} documents added to the vector database")
 
-        # Build RAG chain
         retriever = vector_db.as_retriever()
 
         prompt_template_str = """<|start_of_role|>system<|end_of_role|>
@@ -187,7 +182,6 @@ Answer the question based only on the following context:
     except Exception as e:
         app.logger.error(f"Error processing request: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
