@@ -1,816 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Enhanced RAG Q&A System</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .section {
-            margin-bottom: 30px;
-            padding: 25px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-
-        .section h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.3rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-icon {
-            width: 24px;
-            height: 24px;
-            background: #667eea;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #555;
-        }
-
-        input[type="text"],
-        input[type="file"],
-        select,
-        textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 6px;
-            font-size: 16px;
-            transition: border-color 0.3s, box-shadow 0.3s;
-            margin-bottom: 15px;
-        }
-
-        input[type="text"]:focus,
-        select:focus,
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        button {
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: 600;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s;
-            min-width: 120px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #5a6268;
-            transform: translateY(-2px);
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #218838;
-            transform: translateY(-2px);
-        }
-
-        .response-section {
-            margin-top: 30px;
-            padding: 25px;
-            background: #fff;
-            border-radius: 8px;
-            border: 2px solid #e1e5e9;
-            min-height: 150px;
-        }
-
-        .response-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .response-content {
-            line-height: 1.8;
-            font-size: 16px;
-            color: #444;
-        }
-
-        .loading {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #667eea;
-            font-weight: 600;
-        }
-
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-
-        .status-online {
-            background: #28a745;
-        }
-
-        .status-offline {
-            background: #dc3545;
-        }
-
-        .status-loading {
-            background: #ffc107;
-        }
-
-        .document-list {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #e1e5e9;
-            border-radius: 6px;
-            padding: 10px;
-            background: white;
-        }
-
-        .document-item {
-            padding: 10px;
-            border-bottom: 1px solid #f0f0f0;
-            display: flex;
-            justify-content: between;
-            align-items: center;
-        }
-
-        .document-item:last-child {
-            border-bottom: none;
-        }
-
-        .document-info {
-            flex: 1;
-        }
-
-        .document-name {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .document-meta {
-            font-size: 12px;
-            color: #666;
-            margin-top: 4px;
-        }
-
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #f5c6cb;
-            margin: 15px 0;
-        }
-
-        .success-message {
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #c3e6cb;
-            margin: 15px 0;
-        }
-
-        .info-message {
-            background: #d1ecf1;
-            color: #0c5460;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #bee5eb;
-            margin: 15px 0;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .stat-item {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            border: 2px solid #e1e5e9;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 0.9rem;
-            margin-top: 5px;
-        }
-
-        .advanced-options {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-            border: 1px solid #e9ecef;
-        }
-
-        .toggle-button {
-            background: none;
-            border: none;
-            color: #667eea;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: underline;
-            padding: 0;
-            margin-bottom: 15px;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .file-drop-zone {
-            border: 2px dashed #ccc;
-            border-radius: 8px;
-            padding: 40px;
-            text-align: center;
-            margin-bottom: 15px;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-
-        .file-drop-zone:hover {
-            border-color: #667eea;
-            background: #f8f9ff;
-        }
-
-        .file-drop-zone.dragover {
-            border-color: #667eea;
-            background: #f0f4ff;
-            transform: scale(1.02);
-        }
-
-        .source-info {
-            background: #e3f2fd;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 15px;
-            font-size: 14px;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                margin: 10px;
-                border-radius: 8px;
-            }
-
-            .content {
-                padding: 20px;
-            }
-
-            .header {
-                padding: 20px;
-            }
-
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .button-group {
-                flex-direction: column;
-            }
-
-            button {
-                width: 100%;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Local RAG UI</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 2em auto; }
+    input, textarea, select, button { width: 100%; margin: 0.5em 0; padding: 0.5em; }
+    label { font-weight: bold; }
+    .section { margin: 1.5em 0; padding: 1em; border: 1px solid #ccc; border-radius: 8px; }
+    pre { background: #f8f8f8; padding: 1em; overflow-x: auto; white-space: pre-wrap; }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 Enhanced RAG Q&A System</h1>
-            <p>Upload documents and ask intelligent questions powered by AI</p>
-        </div>
 
-        <div class="content">
-            <!-- Status Section -->
-            <div class="section">
-                <h2>
-                    <span class="section-icon">🔍</span>
-                    System Status
-                </h2>
-                <div id="status-info" class="loading">
-                    <div class="spinner"></div>
-                    Checking system status...
-                </div>
-                <div class="stats" id="stats-container"></div>
-            </div>
-
-            <!-- Document Upload Section -->
-            <div class="section">
-                <h2>
-                    <span class="section-icon">📄</span>
-                    Document Upload
-                </h2>
-
-                <label for="document_url">Enter Document URL:</label>
-                <input type="text" id="document_url" placeholder="https://example.com/document.pdf" />
-
-                <label for="document_file">Or Upload File:</label>
-                <div class="file-drop-zone" id="file-drop-zone">
-                    <p>🔄 Drop files here or click to browse</p>
-                    <input type="file" id="document_file" accept=".pdf,.doc,.docx,.txt" style="display: none;" />
-                </div>
-
-                <div class="button-group">
-                    <button class="btn-primary" onclick="uploadDocument()">📤 Upload Document</button>
-                    <button class="btn-secondary" onclick="refreshDocuments()">🔄 Refresh List</button>
-                </div>
-
-                <div id="upload-status"></div>
-            </div>
-
-            <!-- Document Selection Section -->
-            <div class="section">
-                <h2>
-                    <span class="section-icon">📋</span>
-                    Document Selection
-                </h2>
-
-                <label for="selected_source">Select Document for Q&A:</label>
-                <select id="selected_source">
-                    <option value="">🌐 All Documents</option>
-                </select>
-
-                <div class="document-list" id="document-list">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        Loading documents...
-                    </div>
-                </div>
-            </div>
-
-            <!-- Question Section -->
-            <div class="section">
-                <h2>
-                    <span class="section-icon">❓</span>
-                    Ask Questions
-                </h2>
-
-                <label for="question">Your Question:</label>
-                <textarea id="question"
-                    placeholder="What is this document about? What are the main points discussed?"></textarea>
-
-                <button class="toggle-button" onclick="toggleAdvancedOptions()">⚙️ Advanced Options</button>
-                <div class="advanced-options hidden" id="advanced-options">
-                    <label for="top_k">Number of relevant chunks to retrieve:</label>
-                    <select id="top_k">
-                        <option value="3">3 chunks</option>
-                        <option value="5" selected>5 chunks</option>
-                        <option value="10">10 chunks</option>
-                    </select>
-                </div>
-
-                <div class="button-group">
-                    <button class="btn-success" onclick="askQuestion()">💬 Ask Question</button>
-                    <button class="btn-secondary" onclick="clearResponse()">🗑️ Clear Response</button>
-                </div>
-            </div>
-
-            <!-- Response Section -->
-            <div class="response-section" id="response-section">
-                <div class="response-header">
-                    <span class="section-icon">🤖</span>
-                    <h3>AI Response</h3>
-                </div>
-                <div class="response-content" id="response">
-                    Ask a question to get started!
-                </div>
-                <div id="source-info"></div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Configuration
-        const API_BASE_URL = 'https://my-app-route-vllm.apps.ocp4.imss.work';
-
-        // Global state
-        let systemStatus = {
-            healthy: false,
-            components: {},
-            documents: []
-        };
-
-        // Utility functions
-        function showMessage(message, type = 'info') {
-            const className = `${type}-message`;
-            return `<div class="${className}">${message}</div>`;
-        }
-
-        function formatTimestamp(isoString) {
-            return new Date(isoString).toLocaleString();
-        }
-
-        // Status check
-        async function checkSystemStatus() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/health`);
-                const data = await response.json();
-
-                systemStatus = data;
-                updateStatusDisplay(data);
-
-                if (data.status === 'healthy') {
-                    fetchDocuments();
-                }
-            } catch (error) {
-                console.error('Status check failed:', error);
-                updateStatusDisplay({ status: 'offline', error: error.message });
-            }
-        }
-
-        function updateStatusDisplay(status) {
-            const statusInfo = document.getElementById('status-info');
-            const statsContainer = document.getElementById('stats-container');
-
-            if (status.status === 'healthy') {
-                statusInfo.innerHTML = `
-                    <span class="status-indicator status-online"></span>
-                    System Online - All components ready
-                `;
-
-                // Show stats
-                const stats = [
-                    { number: Object.values(status.components).filter(Boolean).length, label: 'Components Active' },
-                    { number: status.database?.total_documents || 0, label: 'Documents Loaded' },
-                    { number: 'Ready', label: 'System Status' }
-                ];
-
-                statsContainer.innerHTML = stats.map(stat => `
-                    <div class="stat-item">
-                        <div class="stat-number">${stat.number}</div>
-                        <div class="stat-label">${stat.label}</div>
-                    </div>
-                `).join('');
-
-            } else {
-                statusInfo.innerHTML = `
-                    <span class="status-indicator status-offline"></span>
-                    System Offline - ${status.error || 'Components not ready'}
-                `;
-                statsContainer.innerHTML = '';
-            }
-        }
-
-        // Document management
-        async function fetchDocuments() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/list-documents`);
-                const data = await response.json();
-
-                updateDocumentList(data);
-                updateDocumentSelect(data.documents || []);
-
-            } catch (error) {
-                console.error('Error fetching documents:', error);
-                document.getElementById('document-list').innerHTML =
-                    showMessage('Failed to load documents', 'error');
-            }
-        }
-
-        function updateDocumentList(data) {
-            const listContainer = document.getElementById('document-list');
-
-            if (!data.detailed_info || data.detailed_info.length === 0) {
-                listContainer.innerHTML = showMessage('No documents uploaded yet', 'info');
-                return;
-            }
-
-            listContainer.innerHTML = data.detailed_info.map(doc => `
-                <div class="document-item">
-                    <div class="document-info">
-                        <div class="document-name">${doc.source}</div>
-                        <div class="document-meta">
-                            ${doc.chunks} chunks • ${doc.is_url ? 'URL' : 'File'} • 
-                            Added: ${formatTimestamp(doc.processed_at)}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function updateDocumentSelect(documents) {
-            const select = document.getElementById('selected_source');
-            select.innerHTML = '<option value="">🌐 All Documents</option>';
-
-            documents.forEach(source => {
-                const option = document.createElement('option');
-                option.value = source;
-                option.textContent = `📄 ${source}`;
-                select.appendChild(option);
-            });
-        }
-
-        // File upload handling
-        function setupFileDropZone() {
-            const dropZone = document.getElementById('file-drop-zone');
-            const fileInput = document.getElementById('document_file');
-
-            dropZone.addEventListener('click', () => fileInput.click());
-
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.classList.add('dragover');
-            });
-
-            dropZone.addEventListener('dragleave', () => {
-                dropZone.classList.remove('dragover');
-            });
-
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('dragover');
-
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    fileInput.files = files;
-                    dropZone.innerHTML = `<p>📄 Selected: ${files[0].name}</p>`;
-                }
-            });
-
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    dropZone.innerHTML = `<p>📄 Selected: ${e.target.files[0].name}</p>`;
-                }
-            });
-        }
-
-        async function uploadDocument() {
-            const urlInput = document.getElementById('document_url');
-            const fileInput = document.getElementById('document_file');
-            const statusDiv = document.getElementById('upload-status');
-
-            if (!urlInput.value.trim() && fileInput.files.length === 0) {
-                statusDiv.innerHTML = showMessage('Please enter a URL or select a file', 'error');
-                return;
-            }
-
-            const formData = new FormData();
-
-            if (urlInput.value.trim()) {
-                formData.append('document_url', urlInput.value.trim());
-            } else {
-                formData.append('file', fileInput.files[0]);
-            }
-
-            statusDiv.innerHTML = showMessage('Uploading document...', 'info');
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/upload`, {
-                    method: 'POST',
-                    body: formData,
-                    credentials: 'include'
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    statusDiv.innerHTML = showMessage(
-                        `Document uploaded successfully! ${data.chunks_added} chunks processed.`,
-                        'success'
-                    );
-
-                    // Clear inputs
-                    urlInput.value = '';
-                    fileInput.value = '';
-                    document.getElementById('file-drop-zone').innerHTML =
-                        '<p>🔄 Drop files here or click to browse</p>';
-
-                    // Refresh document list
-                    setTimeout(fetchDocuments, 1000);
-
-                } else {
-                    statusDiv.innerHTML = showMessage(`Upload failed: ${data.error}`, 'error');
-                }
-
-            } catch (error) {
-                console.error('Upload error:', error);
-                statusDiv.innerHTML = showMessage('Upload failed: Network error', 'error');
-            }
-        }
-
-        async function askQuestion() {
-            const question = document.getElementById('question').value.trim();
-            const selectedSource = document.getElementById('selected_source').value;
-            const topK = document.getElementById('top_k').value;
-            const responseDiv = document.getElementById('response');
-            const sourceInfoDiv = document.getElementById('source-info');
-
-            if (!question) {
-                responseDiv.innerHTML = showMessage('Please enter a question', 'error');
-                return;
-            }
-
-            // Show loading state
-            responseDiv.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    Processing your question...
-                </div>
-            `;
-            sourceInfoDiv.innerHTML = '';
-
-            const formData = new FormData();
-            formData.append('question', question);
-            formData.append('top_k', topK);
-
-            if (selectedSource) {
-                formData.append('selected_source', selectedSource);
-            }
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/ask`, {
-                    method: 'POST',
-                    body: formData,
-                    credentials: 'include'
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    responseDiv.innerHTML = `<div class="response-content">${data.answer}</div>`;
-
-                    // Show source information
-                    if (data.sources_used && data.sources_used.length > 0) {
-                        sourceInfoDiv.innerHTML = `
-                            <div class="source-info">
-                                <strong>📚 Sources used:</strong><br>
-                                ${data.sources_used.map(source =>
-                            `• ${source.source} (chunk ${source.chunk_index})`
-                        ).join('<br>')}
-                            </div>
-                        `;
-                    }
-
-                } else {
-                    responseDiv.innerHTML = showMessage(`Error: ${data.error}`, 'error');
-                }
-
-            } catch (error) {
-                console.error('Question error:', error);
-                responseDiv.innerHTML = showMessage('Failed to get response: Network error', 'error');
-            }
-        }
-
-        function clearResponse() {
-            document.getElementById('response').innerHTML = 'Ask a question to get started!';
-            document.getElementById('source-info').innerHTML = '';
-            document.getElementById('question').value = '';
-        }
-
-        function refreshDocuments() {
-            fetchDocuments();
-        }
-
-        function toggleAdvancedOptions() {
-            const options = document.getElementById('advanced-options');
-            options.classList.toggle('hidden');
-        }
-
-        // Initialize application
-        window.addEventListener('load', () => {
-            setupFileDropZone();
-            checkSystemStatus();
-
-            // Set up periodic status checks
-            setInterval(checkSystemStatus, 30000); // Check every 30 seconds
-        });
-
-        // Add keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Enter') {
-                askQuestion();
-            }
-        });
-    </script>
+  <h2>📚 Local RAG UI</h2>
+
+  <div class="section">
+    <label>PDF File Upload</label>
+    <input type="file" id="fileInput">
+    <button onclick="uploadFile()">Upload File</button>
+    
+    <label>or Document URL</label>
+    <input type="text" id="urlInput" placeholder="https://arxiv.org/pdf/...">
+    <button onclick="uploadURL()">Upload from URL</button>
+  </div>
+
+  <div class="section">
+    <label>Ask a Question</label>
+    <input type="text" id="questionInput" placeholder="e.g. What is the paper about?">
+    
+    <label>Choose Document Source</label>
+    <select id="sourceSelect"><option>Loading...</option></select>
+    
+    <label>Top-K Chunks</label>
+    <input type="number" id="topK" value="3" min="1" max="10">
+    
+    <button onclick="askQuestion()">Ask</button>
+    <button onclick="processAll()">Upload + Ask</button>
+  </div>
+
+  <div class="section">
+    <label>Answer</label>
+    <pre id="resultBox">--</pre>
+  </div>
+
+  <script>
+    const baseURL = "https://local-rag-praveen.apps.ocp4.imss.work";
+
+    async function listDocuments() {
+      const res = await fetch(`${baseURL}/list-documents`);
+      const data = await res.json();
+      const select = document.getElementById('sourceSelect');
+      select.innerHTML = '';
+      data.documents.forEach(doc => {
+        const opt = document.createElement("option");
+        opt.value = doc;
+        opt.text = doc;
+        select.appendChild(opt);
+      });
+    }
+
+    async function uploadFile() {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) return alert("Choose a file first!");
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${baseURL}/upload`, { method: "POST", body: formData });
+      const data = await res.json();
+      alert("Uploaded: " + data.source);
+      listDocuments();
+    }
+
+    async function uploadURL() {
+      const url = document.getElementById("urlInput").value;
+      if (!url) return alert("Enter a document URL");
+      const formData = new FormData();
+      formData.append("document_url", url);
+      const res = await fetch(`${baseURL}/upload`, { method: "POST", body: formData });
+      const data = await res.json();
+      alert("Uploaded: " + data.source);
+      listDocuments();
+    }
+
+    async function askQuestion() {
+      const question = document.getElementById("questionInput").value;
+      const selectedSource = document.getElementById("sourceSelect").value;
+      const topK = document.getElementById("topK").value;
+      const formData = new FormData();
+      formData.append("question", question);
+      formData.append("selected_source", selectedSource);
+      formData.append("top_k", topK);
+      const res = await fetch(`${baseURL}/ask`, { method: "POST", body: formData });
+      const data = await res.json();
+      document.getElementById("resultBox").textContent = data.answer || "No answer";
+    }
+
+    async function processAll() {
+      const question = document.getElementById("questionInput").value;
+      const file = document.getElementById("fileInput").files[0];
+      const url = document.getElementById("urlInput").value;
+      const topK = document.getElementById("topK").value;
+      if (!question) return alert("Enter a question!");
+      const formData = new FormData();
+      if (file) formData.append("file", file);
+      else if (url) formData.append("document_url", url);
+      else return alert("Choose file or enter URL");
+      formData.append("question", question);
+      formData.append("top_k", topK);
+      const res = await fetch(`${baseURL}/process`, { method: "POST", body: formData });
+      const data = await res.json();
+      document.getElementById("resultBox").textContent = data.answer || "No answer";
+      listDocuments();
+    }
+
+    listDocuments();  // Load on page load
+  </script>
 </body>
-
 </html>
