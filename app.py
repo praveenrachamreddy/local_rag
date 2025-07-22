@@ -60,7 +60,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Enhanced TinyLLM Wrapper
 # ---------------------------
 
-class TinyLLM(LLM):
+class MistralLLM(LLM):
     @property
     def _llm_type(self) -> str:
         return "tinyllm"
@@ -78,23 +78,26 @@ class TinyLLM(LLM):
             "Content-Type": "application/json"
         }
         data = {
-            "model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+            "model": "mistral",
             "messages": [
                 {"role": "user", "content": prompt}
             ],
-            "max_tokens": 512,
-            "temperature": 0.2
+            "temperature": 0.2,
+            "max_tokens": 1024,
+            "stream": False
         }
+
+        mistral_url = "https://mistral-7b-praveen-datascience.apps.ocp4.imss.work/v1/chat/completions"
 
         try:
             response = requests.post(
-                "https://vllm-vllm.apps.ocp4.imss.work/v1/chat/completions",
+                mistral_url,
                 headers=headers,
                 data=json.dumps(data),
                 verify=False
             )
 
-            print("Raw LLM Response:", response.text)
+            print("Raw mistral-LLM Response:", response.text)
             result = response.json()
 
             if "choices" not in result:
@@ -112,7 +115,7 @@ class TinyLLM(LLM):
         except json.JSONDecodeError as je:
             raise RuntimeError(f"Failed to parse LLM response as JSON: {str(je)}") from je
         except Exception as e:
-            raise RuntimeError(f"Error calling TinyLLM API: {str(e)}") from e
+            raise RuntimeError(f"Error calling mistral-LLM API: {str(e)}") from e
         
 # ---------------------------
 # Global Variables & State Management
@@ -213,7 +216,7 @@ def initialize_llm():
     """Initialize LLM with custom configuration"""
     logger.info("Initializing LLM...")
     try:
-        app_state.llm = TinyLLM()  # No parameters needed since URL is hardcoded
+        app_state.llm = MistralLLM()  # No parameters needed since URL is hardcoded
         logger.info("LLM initialized successfully")
         return True
     except Exception as e:
