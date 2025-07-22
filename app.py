@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Optional
 import uuid
 from datetime import datetime
 import time
+from requests.exceptions import Timeout
 
 # LangChain & Dependencies
 from langchain_core.documents import Document
@@ -57,13 +58,13 @@ logger = setup_logging()
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ---------------------------
-# Enhanced TinyLLM Wrapper
+# Enhanced Mistral LLM Class
 # ---------------------------
 
 class MistralLLM(LLM):
     @property
     def _llm_type(self) -> str:
-        return "tinyllm"
+        return "mistral_llm"
     
     class Config:
         arbitrary_types_allowed = True
@@ -94,7 +95,8 @@ class MistralLLM(LLM):
                 mistral_url,
                 headers=headers,
                 data=json.dumps(data),
-                verify=False
+                verify=False,
+                timeout=600  # seconds
             )
 
             print("Raw mistral-LLM Response:", response.text)
@@ -116,6 +118,8 @@ class MistralLLM(LLM):
             raise RuntimeError(f"Failed to parse LLM response as JSON: {str(je)}") from je
         except Exception as e:
             raise RuntimeError(f"Error calling mistral-LLM API: {str(e)}") from e
+        except Timeout:
+            raise RuntimeError("Mistral API timed out after 600 seconds")
         
 # ---------------------------
 # Global Variables & State Management
